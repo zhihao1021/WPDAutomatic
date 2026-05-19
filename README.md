@@ -29,7 +29,7 @@ WPDAutomatic 是一個 **Windows UI Automation** 工具，可以讓 AI Agent（�
 ---
 
 ## Demo
-[https://youtu.be/JXxh_VGvys4?si=vYEJg2lXITC5HUOm](https://youtu.be/JXxh_VGvys4?si=vYEJg2lXITC5HUOm)
+[https://youtu.be/JXxh_VGvys4](https://youtu.be/JXxh_VGvys4)
 
 ## 快速開始
 
