@@ -16,6 +16,7 @@ WPDAutomatic 是一個 **Windows UI Automation** 工具，可以讓 AI Agent（�
 
 ## 目錄
 
+- [Demo](#demo)
 - [快速開始](#快速開始)
 - [運作模式](#運作模式)
   - [MCP 模式（推薦）](#mcp-模式推薦)
@@ -24,9 +25,11 @@ WPDAutomatic 是一個 **Windows UI Automation** 工具，可以讓 AI Agent（�
 - [專案架構](#專案架構)
 - [開發指南](#開發指南)
 - [相依套件](#相依套件)
-- [授權](#授權)
 
 ---
+
+## Demo
+[https://youtu.be/JXxh_VGvys4?si=vYEJg2lXITC5HUOm](https://youtu.be/JXxh_VGvys4?si=vYEJg2lXITC5HUOm)
 
 ## 快速開始
 
