@@ -3,101 +3,82 @@ using WPDAutomatic.Models;
 
 namespace WPDAutomatic.Core;
 
-internal static class ConditionFactory
-{
-    public static IUIAutomationCondition Build(CUIAutomationClass automation, SearchCriteria criteria)
-    {
+internal static class ConditionFactory {
+    public static IUIAutomationCondition Build(CUIAutomationClass automation, SearchCriteria criteria) {
         if (criteria.IsEmpty)
             return automation.CreateTrueCondition();
 
         var conditions = new List<IUIAutomationCondition>();
 
-        if (criteria.Name is not null)
-        {
+        if (criteria.Name is not null) {
             conditions.Add(automation.CreatePropertyCondition(
                 UIA_PropertyIds.UIA_NamePropertyId, criteria.Name));
         }
 
-        if (criteria.AutomationId is not null)
-        {
+        if (criteria.AutomationId is not null) {
             conditions.Add(automation.CreatePropertyCondition(
                 UIA_PropertyIds.UIA_AutomationIdPropertyId, criteria.AutomationId));
         }
 
-        if (criteria.ClassName is not null)
-        {
+        if (criteria.ClassName is not null) {
             conditions.Add(automation.CreatePropertyCondition(
                 UIA_PropertyIds.UIA_ClassNamePropertyId, criteria.ClassName));
         }
 
-        if (criteria.ControlType is not null && TryParseControlTypeId(criteria.ControlType, out var ctId))
-        {
+        if (criteria.ControlType is not null && TryParseControlTypeId(criteria.ControlType, out var ctId)) {
             conditions.Add(automation.CreatePropertyCondition(
                 UIA_PropertyIds.UIA_ControlTypePropertyId, ctId));
         }
 
-        if (criteria.FrameworkId is not null)
-        {
+        if (criteria.FrameworkId is not null) {
             conditions.Add(automation.CreatePropertyCondition(
                 UIA_PropertyIds.UIA_FrameworkIdPropertyId, criteria.FrameworkId));
         }
 
-        if (criteria.IsEnabled.HasValue)
-        {
+        if (criteria.IsEnabled.HasValue) {
             conditions.Add(automation.CreatePropertyCondition(
                 UIA_PropertyIds.UIA_IsEnabledPropertyId, criteria.IsEnabled.Value ? 1 : 0));
         }
 
-        if (criteria.ProcessId.HasValue)
-        {
+        if (criteria.ProcessId.HasValue) {
             conditions.Add(automation.CreatePropertyCondition(
                 UIA_PropertyIds.UIA_ProcessIdPropertyId, criteria.ProcessId.Value));
         }
 
-        return conditions.Count switch
-        {
+        return conditions.Count switch {
             0 => automation.CreateTrueCondition(),
             1 => conditions[0],
             _ => automation.CreateAndConditionFromArray([.. conditions])
         };
     }
 
-    public static bool MatchesCriteria(IUIAutomationElement element, SearchCriteria criteria)
-    {
-        if (criteria.Name is not null)
-        {
-            try
-            {
+    public static bool MatchesCriteria(IUIAutomationElement element, SearchCriteria criteria) {
+        if (criteria.Name is not null) {
+            try {
                 if (!string.Equals(element.CurrentName, criteria.Name, StringComparison.OrdinalIgnoreCase))
                     return false;
             }
             catch { return false; }
         }
 
-        if (criteria.AutomationId is not null)
-        {
-            try
-            {
+        if (criteria.AutomationId is not null) {
+            try {
                 if (!string.Equals(element.CurrentAutomationId, criteria.AutomationId, StringComparison.OrdinalIgnoreCase))
                     return false;
             }
             catch { return false; }
         }
 
-        if (criteria.ClassName is not null)
-        {
-            try
-            {
+        if (criteria.ClassName is not null) {
+            try {
                 if (!string.Equals(element.CurrentClassName, criteria.ClassName, StringComparison.OrdinalIgnoreCase))
                     return false;
             }
             catch { return false; }
         }
 
-        if (criteria.ControlType is not null)
-        {
-            try
-            {
+        if (criteria.ControlType is not null) {
+            try {
                 var ctId = ParseControlTypeId(criteria.ControlType);
                 if (!ctId.HasValue || element.CurrentControlType != ctId.Value)
                     return false;
@@ -105,30 +86,24 @@ internal static class ConditionFactory
             catch { return false; }
         }
 
-        if (criteria.FrameworkId is not null)
-        {
-            try
-            {
+        if (criteria.FrameworkId is not null) {
+            try {
                 if (!string.Equals(element.CurrentFrameworkId, criteria.FrameworkId, StringComparison.OrdinalIgnoreCase))
                     return false;
             }
             catch { return false; }
         }
 
-        if (criteria.IsEnabled.HasValue)
-        {
-            try
-            {
+        if (criteria.IsEnabled.HasValue) {
+            try {
                 if ((element.CurrentIsEnabled != 0) != criteria.IsEnabled.Value)
                     return false;
             }
             catch { return false; }
         }
 
-        if (criteria.ProcessId.HasValue)
-        {
-            try
-            {
+        if (criteria.ProcessId.HasValue) {
+            try {
                 if (element.CurrentProcessId != criteria.ProcessId.Value)
                     return false;
             }
@@ -138,10 +113,8 @@ internal static class ConditionFactory
         return true;
     }
 
-    public static int? ParseControlTypeId(string name)
-    {
-        return name.ToUpperInvariant() switch
-        {
+    public static int? ParseControlTypeId(string name) {
+        return name.ToUpperInvariant() switch {
             "BUTTON" => UIA_ControlTypeIds.UIA_ButtonControlTypeId,
             "CALENDAR" => UIA_ControlTypeIds.UIA_CalendarControlTypeId,
             "CHECKBOX" => UIA_ControlTypeIds.UIA_CheckBoxControlTypeId,
@@ -187,11 +160,9 @@ internal static class ConditionFactory
         };
     }
 
-    private static bool TryParseControlTypeId(string name, out int ctId)
-    {
+    private static bool TryParseControlTypeId(string name, out int ctId) {
         var parsed = ParseControlTypeId(name);
-        if (parsed.HasValue)
-        {
+        if (parsed.HasValue) {
             ctId = parsed.Value;
             return true;
         }

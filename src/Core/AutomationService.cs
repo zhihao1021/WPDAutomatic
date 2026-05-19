@@ -6,41 +6,33 @@ using WPDAutomatic.Models;
 
 namespace WPDAutomatic.Core;
 
-public sealed class AutomationService : IAutomationService, IDisposable
-{
+public sealed class AutomationService : IAutomationService, IDisposable {
     private readonly CUIAutomationClass _automation;
     private IUIAutomationElement? _rootElement;
 
-    public AutomationService()
-    {
+    public AutomationService() {
         _automation = new CUIAutomationClass();
     }
 
-    public IReadOnlyList<ProcessInfo> ListProcesses(string? filter = null)
-    {
+    public IReadOnlyList<ProcessInfo> ListProcesses(string? filter = null) {
         var processes = Process.GetProcesses();
         return processes
-            .Where(p =>
-            {
-                try
-                {
+            .Where(p => {
+                try {
                     return !string.IsNullOrWhiteSpace(p.MainWindowTitle) && p.MainWindowHandle != IntPtr.Zero;
                 }
                 catch { return false; }
             })
-            .Where(p =>
-            {
+            .Where(p => {
                 if (filter is null) return true;
-                try
-                {
+                try {
                     return p.ProcessName.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
                            p.MainWindowTitle.Contains(filter, StringComparison.OrdinalIgnoreCase);
                 }
                 catch { return false; }
             })
             .OrderBy(p => p.ProcessName)
-            .Select(p => new ProcessInfo
-            {
+            .Select(p => new ProcessInfo {
                 ProcessId = p.Id,
                 ProcessName = p.ProcessName,
                 MainWindowTitle = p.MainWindowTitle,
@@ -50,10 +42,8 @@ public sealed class AutomationService : IAutomationService, IDisposable
             .ToList();
     }
 
-    public bool AttachToProcess(int processId)
-    {
-        try
-        {
+    public bool AttachToProcess(int processId) {
+        try {
             var process = Process.GetProcessById(processId);
             if (process.MainWindowHandle == IntPtr.Zero)
                 return false;
@@ -61,38 +51,31 @@ public sealed class AutomationService : IAutomationService, IDisposable
             _rootElement = _automation.ElementFromHandle(process.MainWindowHandle);
             return _rootElement is not null;
         }
-        catch
-        {
+        catch {
             return false;
         }
     }
 
-    public bool AttachToWindow(IntPtr windowHandle)
-    {
-        try
-        {
+    public bool AttachToWindow(IntPtr windowHandle) {
+        try {
             _rootElement = _automation.ElementFromHandle(windowHandle);
             return _rootElement is not null;
         }
-        catch
-        {
+        catch {
             return false;
         }
     }
 
-    public void Detach()
-    {
+    public void Detach() {
         _rootElement = null;
     }
 
-    public ElementNode? GetElementTree(IUIAutomationElement? root = null, int maxDepth = 5)
-    {
+    public ElementNode? GetElementTree(IUIAutomationElement? root = null, int maxDepth = 5) {
         var element = root ?? _rootElement ?? _automation.GetRootElement();
         return BuildNode(element, maxDepth, 0);
     }
 
-    public List<ElementNode> FindElements(SearchCriteria criteria, IUIAutomationElement? scope = null)
-    {
+    public List<ElementNode> FindElements(SearchCriteria criteria, IUIAutomationElement? scope = null) {
         var scopeElement = scope ?? _rootElement ?? _automation.GetRootElement();
         var searchDescendants = criteria.SearchDescendants ?? true;
         var results = new List<ElementNode>();
@@ -100,12 +83,10 @@ public sealed class AutomationService : IAutomationService, IDisposable
         var condition = ConditionFactory.Build(_automation, criteria);
         var treeScope = searchDescendants ? TreeScope.TreeScope_Descendants : TreeScope.TreeScope_Children;
 
-        try
-        {
+        try {
             var matches = scopeElement.FindAll(treeScope, condition);
             var count = matches.Length;
-            for (int i = 0; i < count; i++)
-            {
+            for (int i = 0; i < count; i++) {
                 var match = matches.GetElement(i);
                 if (ConditionFactory.MatchesCriteria(match, criteria))
                     results.Add(BuildNode(match, 0, 0)!);
@@ -116,20 +97,17 @@ public sealed class AutomationService : IAutomationService, IDisposable
         return results;
     }
 
-    public ElementNode? FindFirst(SearchCriteria criteria, IUIAutomationElement? scope = null)
-    {
+    public ElementNode? FindFirst(SearchCriteria criteria, IUIAutomationElement? scope = null) {
         var scopeElement = scope ?? _rootElement ?? _automation.GetRootElement();
         var searchDescendants = criteria.SearchDescendants ?? true;
 
         var condition = ConditionFactory.Build(_automation, criteria);
         var treeScope = searchDescendants ? TreeScope.TreeScope_Descendants : TreeScope.TreeScope_Children;
 
-        try
-        {
+        try {
             var matches = scopeElement.FindAll(treeScope, condition);
             var count = matches.Length;
-            for (int i = 0; i < count; i++)
-            {
+            for (int i = 0; i < count; i++) {
                 var match = matches.GetElement(i);
                 if (ConditionFactory.MatchesCriteria(match, criteria))
                     return BuildNode(match, 0, 0);
@@ -140,10 +118,8 @@ public sealed class AutomationService : IAutomationService, IDisposable
         return null;
     }
 
-    public ElementNode? FindElementByRuntimeId(string runtimeId)
-    {
-        try
-        {
+    public ElementNode? FindElementByRuntimeId(string runtimeId) {
+        try {
             var parts = runtimeId.Split(',', StringSplitOptions.RemoveEmptyEntries);
             var idArray = parts.Select(int.Parse).ToArray();
 
@@ -151,11 +127,9 @@ public sealed class AutomationService : IAutomationService, IDisposable
             var matches = scope.FindAll(TreeScope.TreeScope_Descendants, _automation.CreateTrueCondition());
             var count = matches.Length;
 
-            for (int i = 0; i < count; i++)
-            {
+            for (int i = 0; i < count; i++) {
                 var el = matches.GetElement(i);
-                try
-                {
+                try {
                     var rid = el.GetRuntimeId();
                     if (rid is not null && rid.Length == idArray.Length && rid.SequenceEqual(idArray))
                         return BuildNode(el, 0, 0);
@@ -168,35 +142,28 @@ public sealed class AutomationService : IAutomationService, IDisposable
         return null;
     }
 
-    public ElementNode? GetFocusedElement()
-    {
-        try
-        {
+    public ElementNode? GetFocusedElement() {
+        try {
             var focused = _automation.GetFocusedElement();
             return focused is not null ? BuildNode(focused, 0, 0) : null;
         }
-        catch
-        {
+        catch {
             return null;
         }
     }
 
-    public ElementNode? ElementFromPoint(double x, double y)
-    {
-        try
-        {
+    public ElementNode? ElementFromPoint(double x, double y) {
+        try {
             var pt = new tagPOINT { x = (int)x, y = (int)y };
             var element = _automation.ElementFromPoint(pt);
             return element is not null ? BuildNode(element, 0, 0) : null;
         }
-        catch
-        {
+        catch {
             return null;
         }
     }
 
-    public IUIAutomationElement? ResolveElement(ElementNode node)
-    {
+    public IUIAutomationElement? ResolveElement(ElementNode node) {
         if (node.BackingElement is not null)
             return node.BackingElement;
 
@@ -206,49 +173,39 @@ public sealed class AutomationService : IAutomationService, IDisposable
         return _rootElement;
     }
 
-    public void Click(ElementNode element)
-    {
+    public void Click(ElementNode element) {
         var el = ResolveElement(element) ?? throw new InvalidOperationException("Cannot resolve element");
         InvokeClick(el);
     }
 
-    public void DoubleClick(ElementNode element)
-    {
+    public void DoubleClick(ElementNode element) {
         var el = ResolveElement(element) ?? throw new InvalidOperationException("Cannot resolve element");
-        if (TryGetClickablePoint(el, out var x, out var y))
-        {
+        if (TryGetClickablePoint(el, out var x, out var y)) {
             PerformMouseClick(x, y, true);
         }
-        else
-        {
+        else {
             InvokeClick(el);
             Thread.Sleep(50);
             InvokeClick(el);
         }
     }
 
-    public void RightClick(ElementNode element)
-    {
+    public void RightClick(ElementNode element) {
         var el = ResolveElement(element) ?? throw new InvalidOperationException("Cannot resolve element");
-        if (TryGetClickablePoint(el, out var x, out var y))
-        {
+        if (TryGetClickablePoint(el, out var x, out var y)) {
             PerformRightClick(x, y);
         }
-        else
-        {
+        else {
             throw new InvalidOperationException("Cannot get clickable point for right-click");
         }
     }
 
-    public void SetValue(ElementNode element, string value)
-    {
+    public void SetValue(ElementNode element, string value) {
         var el = ResolveElement(element) ?? throw new InvalidOperationException("Cannot resolve element");
 
-        try
-        {
+        try {
             var vp = el.GetCurrentPattern(UIA_PatternIds.UIA_ValuePatternId) as IUIAutomationValuePattern;
-            if (vp is not null)
-            {
+            if (vp is not null) {
                 vp.SetValue(value);
                 return;
             }
@@ -260,15 +217,12 @@ public sealed class AutomationService : IAutomationService, IDisposable
         SendKeys(value);
     }
 
-    public void Invoke(ElementNode element)
-    {
+    public void Invoke(ElementNode element) {
         var el = ResolveElement(element) ?? throw new InvalidOperationException("Cannot resolve element");
 
-        try
-        {
+        try {
             var ip = el.GetCurrentPattern(UIA_PatternIds.UIA_InvokePatternId) as IUIAutomationInvokePattern;
-            if (ip is not null)
-            {
+            if (ip is not null) {
                 ip.Invoke();
                 return;
             }
@@ -278,48 +232,38 @@ public sealed class AutomationService : IAutomationService, IDisposable
         throw new InvalidOperationException($"Element does not support InvokePattern. Supported: {string.Join(", ", GetSupportedPatterns(element))}");
     }
 
-    public void SelectItem(ElementNode element, string item)
-    {
+    public void SelectItem(ElementNode element, string item) {
         var el = ResolveElement(element) ?? throw new InvalidOperationException("Cannot resolve element");
 
-        try
-        {
+        try {
             var sip = el.GetCurrentPattern(UIA_PatternIds.UIA_SelectionItemPatternId) as IUIAutomationSelectionItemPattern;
-            if (sip is not null)
-            {
+            if (sip is not null) {
                 sip.Select();
                 return;
             }
         }
         catch { }
 
-        try
-        {
+        try {
             var ecp = el.GetCurrentPattern(UIA_PatternIds.UIA_ExpandCollapsePatternId) as IUIAutomationExpandCollapsePattern;
-            if (ecp is not null)
-            {
+            if (ecp is not null) {
                 ecp.Expand();
                 Thread.Sleep(100);
 
                 var matches = el.FindAll(TreeScope.TreeScope_Descendants, _automation.CreateTrueCondition());
                 var count = matches.Length;
-                for (int i = 0; i < count; i++)
-                {
+                for (int i = 0; i < count; i++) {
                     var child = matches.GetElement(i);
-                    try
-                    {
+                    try {
                         if (string.Equals(child.CurrentName, item, StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(child.CurrentAutomationId, item, StringComparison.OrdinalIgnoreCase))
-                        {
+                            string.Equals(child.CurrentAutomationId, item, StringComparison.OrdinalIgnoreCase)) {
                             var childSip = child.GetCurrentPattern(UIA_PatternIds.UIA_SelectionItemPatternId) as IUIAutomationSelectionItemPattern;
-                            if (childSip is not null)
-                            {
+                            if (childSip is not null) {
                                 childSip.Select();
                                 return;
                             }
                             var childIp = child.GetCurrentPattern(UIA_PatternIds.UIA_InvokePatternId) as IUIAutomationInvokePattern;
-                            if (childIp is not null)
-                            {
+                            if (childIp is not null) {
                                 childIp.Invoke();
                                 return;
                             }
@@ -336,15 +280,12 @@ public sealed class AutomationService : IAutomationService, IDisposable
         throw new InvalidOperationException($"Cannot select item '{item}'");
     }
 
-    public void Toggle(ElementNode element)
-    {
+    public void Toggle(ElementNode element) {
         var el = ResolveElement(element) ?? throw new InvalidOperationException("Cannot resolve element");
 
-        try
-        {
+        try {
             var tp = el.GetCurrentPattern(UIA_PatternIds.UIA_TogglePatternId) as IUIAutomationTogglePattern;
-            if (tp is not null)
-            {
+            if (tp is not null) {
                 tp.Toggle();
                 return;
             }
@@ -354,15 +295,12 @@ public sealed class AutomationService : IAutomationService, IDisposable
         throw new InvalidOperationException("Element does not support TogglePattern");
     }
 
-    public void Expand(ElementNode element)
-    {
+    public void Expand(ElementNode element) {
         var el = ResolveElement(element) ?? throw new InvalidOperationException("Cannot resolve element");
 
-        try
-        {
+        try {
             var ecp = el.GetCurrentPattern(UIA_PatternIds.UIA_ExpandCollapsePatternId) as IUIAutomationExpandCollapsePattern;
-            if (ecp is not null)
-            {
+            if (ecp is not null) {
                 ecp.Expand();
                 return;
             }
@@ -372,15 +310,12 @@ public sealed class AutomationService : IAutomationService, IDisposable
         throw new InvalidOperationException("Element does not support ExpandCollapsePattern");
     }
 
-    public void Collapse(ElementNode element)
-    {
+    public void Collapse(ElementNode element) {
         var el = ResolveElement(element) ?? throw new InvalidOperationException("Cannot resolve element");
 
-        try
-        {
+        try {
             var ecp = el.GetCurrentPattern(UIA_PatternIds.UIA_ExpandCollapsePatternId) as IUIAutomationExpandCollapsePattern;
-            if (ecp is not null)
-            {
+            if (ecp is not null) {
                 ecp.Collapse();
                 return;
             }
@@ -390,15 +325,12 @@ public sealed class AutomationService : IAutomationService, IDisposable
         throw new InvalidOperationException("Element does not support ExpandCollapsePattern");
     }
 
-    public void ScrollIntoView(ElementNode element)
-    {
+    public void ScrollIntoView(ElementNode element) {
         var el = ResolveElement(element) ?? throw new InvalidOperationException("Cannot resolve element");
 
-        try
-        {
+        try {
             var sip = el.GetCurrentPattern(UIA_PatternIds.UIA_ScrollItemPatternId) as IUIAutomationScrollItemPattern;
-            if (sip is not null)
-            {
+            if (sip is not null) {
                 sip.ScrollIntoView();
                 return;
             }
@@ -408,20 +340,16 @@ public sealed class AutomationService : IAutomationService, IDisposable
         el.SetFocus();
     }
 
-    public List<string> GetSupportedPatterns(ElementNode element)
-    {
+    public List<string> GetSupportedPatterns(ElementNode element) {
         var el = ResolveElement(element) ?? throw new InvalidOperationException("Cannot resolve element");
         return GetAvailablePatterns(el);
     }
 
-    public object? GetPropertyValue(ElementNode element, string propertyName)
-    {
+    public object? GetPropertyValue(ElementNode element, string propertyName) {
         var el = ResolveElement(element) ?? throw new InvalidOperationException("Cannot resolve element");
 
-        try
-        {
-            return propertyName.ToUpperInvariant() switch
-            {
+        try {
+            return propertyName.ToUpperInvariant() switch {
                 "NAME" => el.CurrentName ?? string.Empty,
                 "AUTOMATIONID" => el.CurrentAutomationId ?? string.Empty,
                 "CLASsNAME" => el.CurrentClassName ?? string.Empty,
@@ -446,29 +374,24 @@ public sealed class AutomationService : IAutomationService, IDisposable
                 _ => el.GetCurrentPropertyValue(PropertyNameToId(propertyName))
             };
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             return $"Error reading property: {ex.Message}";
         }
     }
 
-    public bool WaitForElement(SearchCriteria criteria, int timeoutMs, IUIAutomationElement? scope = null)
-    {
+    public bool WaitForElement(SearchCriteria criteria, int timeoutMs, IUIAutomationElement? scope = null) {
         var scopeElement = scope ?? _rootElement ?? _automation.GetRootElement();
         var searchDescendants = criteria.SearchDescendants ?? true;
         var deadline = Environment.TickCount64 + (uint)timeoutMs;
 
-        while (Environment.TickCount64 < deadline)
-        {
+        while (Environment.TickCount64 < deadline) {
             var condition = ConditionFactory.Build(_automation, criteria);
             var treeScope = searchDescendants ? TreeScope.TreeScope_Descendants : TreeScope.TreeScope_Children;
 
-            try
-            {
+            try {
                 var matches = scopeElement.FindAll(treeScope, condition);
                 var count = matches.Length;
-                for (int i = 0; i < count; i++)
-                {
+                for (int i = 0; i < count; i++) {
                     var match = matches.GetElement(i);
                     if (ConditionFactory.MatchesCriteria(match, criteria))
                         return true;
@@ -482,38 +405,31 @@ public sealed class AutomationService : IAutomationService, IDisposable
         return false;
     }
 
-    public void Dispose()
-    {
+    public void Dispose() {
         Detach();
     }
 
-    private ElementNode? BuildNode(IUIAutomationElement element, int maxDepth, int currentDepth)
-    {
+    private ElementNode? BuildNode(IUIAutomationElement element, int maxDepth, int currentDepth) {
         if (element is null) return null;
 
-        try
-        {
+        try {
             int[]? runtimeIdArray = null;
             try { runtimeIdArray = element.GetRuntimeId(); } catch { }
 
-            var node = new ElementNode
-            {
+            var node = new ElementNode {
                 Name = SafeGet(() => element.CurrentName) ?? string.Empty,
                 AutomationId = SafeGet(() => element.CurrentAutomationId) ?? string.Empty,
                 ControlType = SafeGet(() => ControlTypeIdToName(element.CurrentControlType)) ?? string.Empty,
                 ClassName = SafeGet(() => element.CurrentClassName) ?? string.Empty,
                 IsEnabled = SafeGet(() => element.CurrentIsEnabled != 0),
                 IsOffscreen = SafeGet(() => element.CurrentIsOffscreen != 0),
-                BoundingRectangle = SafeGet<BoundingRectangle?>(() =>
-                {
+                BoundingRectangle = SafeGet<BoundingRectangle?>(() => {
                     var r = element.CurrentBoundingRectangle;
                     return new BoundingRectangle { X = r.left, Y = r.top, Width = r.right - r.left, Height = r.bottom - r.top };
                 }),
                 HelpText = SafeGet(() => element.CurrentHelpText) ?? string.Empty,
-                Value = SafeGet<string?>(() =>
-                {
-                    try
-                    {
+                Value = SafeGet<string?>(() => {
+                    try {
                         var vp = element.GetCurrentPattern(UIA_PatternIds.UIA_ValuePatternId) as IUIAutomationValuePattern;
                         return vp?.CurrentValue ?? null;
                     }
@@ -527,14 +443,11 @@ public sealed class AutomationService : IAutomationService, IDisposable
                 BackingElement = element
             };
 
-            if (currentDepth < maxDepth)
-            {
-                try
-                {
+            if (currentDepth < maxDepth) {
+                try {
                     var children = element.FindAll(TreeScope.TreeScope_Children, _automation.CreateTrueCondition());
                     var childCount = children.Length;
-                    for (int i = 0; i < childCount; i++)
-                    {
+                    for (int i = 0; i < childCount; i++) {
                         var child = children.GetElement(i);
                         var childNode = BuildNode(child, maxDepth, currentDepth + 1);
                         if (childNode is not null)
@@ -546,24 +459,20 @@ public sealed class AutomationService : IAutomationService, IDisposable
 
             return node;
         }
-        catch
-        {
+        catch {
             return null;
         }
     }
 
-    private static List<string> GetAvailablePatternsStatic(IUIAutomationElement element)
-    {
+    private static List<string> GetAvailablePatternsStatic(IUIAutomationElement element) {
         return GetAvailablePatternsImpl(element);
     }
 
-    private List<string> GetAvailablePatterns(IUIAutomationElement element)
-    {
+    private List<string> GetAvailablePatterns(IUIAutomationElement element) {
         return GetAvailablePatternsImpl(element);
     }
 
-    private static List<string> GetAvailablePatternsImpl(IUIAutomationElement element)
-    {
+    private static List<string> GetAvailablePatternsImpl(IUIAutomationElement element) {
         var patterns = new List<string>();
         var knownPatterns = new (int PatternId, string Name)[]
         {
@@ -587,10 +496,8 @@ public sealed class AutomationService : IAutomationService, IDisposable
             (UIA_PatternIds.UIA_MultipleViewPatternId, "MultipleView"),
         };
 
-        foreach (var (patternId, name) in knownPatterns)
-        {
-            try
-            {
+        foreach (var (patternId, name) in knownPatterns) {
+            try {
                 var p = element.GetCurrentPattern(patternId);
                 if (p is not null)
                     patterns.Add(name);
@@ -601,43 +508,35 @@ public sealed class AutomationService : IAutomationService, IDisposable
         return patterns;
     }
 
-    private void InvokeClick(IUIAutomationElement element)
-    {
-        try
-        {
+    private void InvokeClick(IUIAutomationElement element) {
+        try {
             var ip = element.GetCurrentPattern(UIA_PatternIds.UIA_InvokePatternId) as IUIAutomationInvokePattern;
-            if (ip is not null)
-            {
+            if (ip is not null) {
                 ip.Invoke();
                 return;
             }
         }
         catch { }
 
-        try
-        {
+        try {
             var tp = element.GetCurrentPattern(UIA_PatternIds.UIA_TogglePatternId) as IUIAutomationTogglePattern;
-            if (tp is not null)
-            {
+            if (tp is not null) {
                 tp.Toggle();
                 return;
             }
         }
         catch { }
 
-        try
-        {
+        try {
             var sip = element.GetCurrentPattern(UIA_PatternIds.UIA_SelectionItemPatternId) as IUIAutomationSelectionItemPattern;
-            if (sip is not null)
-            {
+            if (sip is not null) {
                 sip.Select();
                 return;
             }
         }
         catch { }
 
-        if (TryGetClickablePoint(element, out var cx, out var cy))
-        {
+        if (TryGetClickablePoint(element, out var cx, out var cy)) {
             PerformMouseClick(cx, cy, false);
             return;
         }
@@ -645,14 +544,11 @@ public sealed class AutomationService : IAutomationService, IDisposable
         throw new InvalidOperationException($"Cannot click element. Supported patterns: {string.Join(", ", GetAvailablePatterns(element))}");
     }
 
-    private bool TryGetClickablePoint(IUIAutomationElement element, out int x, out int y)
-    {
-        try
-        {
+    private bool TryGetClickablePoint(IUIAutomationElement element, out int x, out int y) {
+        try {
             var pt = new tagPOINT();
             var result = element.GetClickablePoint(out pt);
-            if (result == 0)
-            {
+            if (result == 0) {
                 x = pt.x;
                 y = pt.y;
                 return true;
@@ -660,8 +556,7 @@ public sealed class AutomationService : IAutomationService, IDisposable
         }
         catch { }
 
-        try
-        {
+        try {
             var rect = element.CurrentBoundingRectangle;
             x = rect.left + (rect.right - rect.left) / 2;
             y = rect.top + (rect.bottom - rect.top) / 2;
@@ -674,11 +569,9 @@ public sealed class AutomationService : IAutomationService, IDisposable
         return false;
     }
 
-    private static void PerformMouseClick(int x, int y, bool doubleClick)
-    {
+    private static void PerformMouseClick(int x, int y, bool doubleClick) {
         var originalPos = System.Windows.Forms.Cursor.Position;
-        try
-        {
+        try {
             System.Windows.Forms.Cursor.Position = new System.Drawing.Point(x, y);
             Thread.Sleep(30);
 
@@ -686,25 +579,21 @@ public sealed class AutomationService : IAutomationService, IDisposable
             Thread.Sleep(10);
             NativeMethods.SendMouseInput(NativeMethods.MOUSEEVENTF_LEFTUP, 0, 0);
 
-            if (doubleClick)
-            {
+            if (doubleClick) {
                 Thread.Sleep(50);
                 NativeMethods.SendMouseInput(NativeMethods.MOUSEEVENTF_LEFTDOWN, 0, 0);
                 Thread.Sleep(10);
                 NativeMethods.SendMouseInput(NativeMethods.MOUSEEVENTF_LEFTUP, 0, 0);
             }
         }
-        finally
-        {
+        finally {
             System.Windows.Forms.Cursor.Position = originalPos;
         }
     }
 
-    private static void PerformRightClick(int x, int y)
-    {
+    private static void PerformRightClick(int x, int y) {
         var originalPos = System.Windows.Forms.Cursor.Position;
-        try
-        {
+        try {
             System.Windows.Forms.Cursor.Position = new System.Drawing.Point(x, y);
             Thread.Sleep(30);
 
@@ -712,21 +601,17 @@ public sealed class AutomationService : IAutomationService, IDisposable
             Thread.Sleep(10);
             NativeMethods.SendMouseInput(NativeMethods.MOUSEEVENTF_RIGHTUP, 0, 0);
         }
-        finally
-        {
+        finally {
             System.Windows.Forms.Cursor.Position = originalPos;
         }
     }
 
-    private static void SendKeys(string keys)
-    {
+    private static void SendKeys(string keys) {
         System.Windows.Forms.SendKeys.SendWait(keys);
     }
 
-    private IUIAutomationElement? FindBackingByRuntimeId(string runtimeId)
-    {
-        try
-        {
+    private IUIAutomationElement? FindBackingByRuntimeId(string runtimeId) {
+        try {
             var parts = runtimeId.Split(',', StringSplitOptions.RemoveEmptyEntries);
             var idArray = parts.Select(int.Parse).ToArray();
 
@@ -734,11 +619,9 @@ public sealed class AutomationService : IAutomationService, IDisposable
             var matches = scope.FindAll(TreeScope.TreeScope_Descendants, _automation.CreateTrueCondition());
             var count = matches.Length;
 
-            for (int i = 0; i < count; i++)
-            {
+            for (int i = 0; i < count; i++) {
                 var el = matches.GetElement(i);
-                try
-                {
+                try {
                     var rid = el.GetRuntimeId();
                     if (rid is not null && rid.Length == idArray.Length && rid.SequenceEqual(idArray))
                         return el;
@@ -751,10 +634,8 @@ public sealed class AutomationService : IAutomationService, IDisposable
         return null;
     }
 
-    private static string ControlTypeIdToName(int controlTypeId)
-    {
-        return controlTypeId switch
-        {
+    private static string ControlTypeIdToName(int controlTypeId) {
+        return controlTypeId switch {
             UIA_ControlTypeIds.UIA_ButtonControlTypeId => "Button",
             UIA_ControlTypeIds.UIA_CalendarControlTypeId => "Calendar",
             UIA_ControlTypeIds.UIA_CheckBoxControlTypeId => "CheckBox",
@@ -800,10 +681,8 @@ public sealed class AutomationService : IAutomationService, IDisposable
         };
     }
 
-    private static int PropertyNameToId(string propertyName)
-    {
-        return propertyName.ToUpperInvariant() switch
-        {
+    private static int PropertyNameToId(string propertyName) {
+        return propertyName.ToUpperInvariant() switch {
             "RUNTIMEID" => UIA_PropertyIds.UIA_RuntimeIdPropertyId,
             "BOUNDINGRECTANGLE" => UIA_PropertyIds.UIA_BoundingRectanglePropertyId,
             "PROCESSID" => UIA_PropertyIds.UIA_ProcessIdPropertyId,
@@ -834,13 +713,11 @@ public sealed class AutomationService : IAutomationService, IDisposable
         };
     }
 
-    private static string RectToString(tagRECT rect)
-    {
+    private static string RectToString(tagRECT rect) {
         return $"{{left={rect.left}, top={rect.top}, right={rect.right}, bottom={rect.bottom}}}";
     }
 
-    private static T SafeGet<T>(Func<T> getter, T defaultValue = default!)
-    {
+    private static T SafeGet<T>(Func<T> getter, T defaultValue = default!) {
         try { return getter(); }
         catch { return defaultValue; }
     }

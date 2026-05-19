@@ -3,8 +3,7 @@ using WPDAutomatic.Models;
 
 namespace WPDAutomatic.Abstractions;
 
-public interface IAutomationService
-{
+public interface IAutomationService {
     IReadOnlyList<ProcessInfo> ListProcesses(string? filter = null);
     bool AttachToProcess(int processId);
     bool AttachToWindow(IntPtr windowHandle);

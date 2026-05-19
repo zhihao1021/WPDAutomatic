@@ -2,8 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace WPDAutomatic.Core;
 
-internal static class NativeMethods
-{
+internal static class NativeMethods {
     public const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
     public const uint MOUSEEVENTF_LEFTUP = 0x0004;
     public const uint MOUSEEVENTF_RIGHTDOWN = 0x0008;
@@ -13,15 +12,13 @@ internal static class NativeMethods
     private static extern uint SendInput(uint cInputs, INPUT[] pInputs, int cbSize);
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct INPUT
-    {
+    private struct INPUT {
         public uint type;
         public MOUSEINPUT mi;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct MOUSEINPUT
-    {
+    private struct MOUSEINPUT {
         public int dx;
         public int dy;
         public uint mouseData;
@@ -30,8 +27,7 @@ internal static class NativeMethods
         public UIntPtr dwExtraInfo;
     }
 
-    public static void SendMouseInput(uint dwFlags, int dx, int dy)
-    {
+    public static void SendMouseInput(uint dwFlags, int dx, int dy) {
         var inputs = new INPUT[]
         {
             new()

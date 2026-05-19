@@ -2,8 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace WPDAutomatic.Models;
 
-public sealed class CommandResponse
-{
+public sealed class CommandResponse {
     [JsonPropertyName("id")]
     public string Id { get; init; } = string.Empty;
 

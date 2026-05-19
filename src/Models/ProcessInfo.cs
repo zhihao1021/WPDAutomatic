@@ -2,8 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace WPDAutomatic.Models;
 
-public sealed class ProcessInfo
-{
+public sealed class ProcessInfo {
     [JsonPropertyName("processId")]
     public int ProcessId { get; init; }
 

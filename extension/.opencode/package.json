@@ -1,0 +1,9 @@
+{
+  "name": "wpda-automatic-opencode-extension",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OpenCode extension for Windows UI Automation via WPDAutomatic",
+  "dependencies": {
+    "@opencode-ai/plugin": "latest"
+  }
+}

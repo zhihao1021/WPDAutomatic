@@ -3,8 +3,7 @@ using Interop.UIAutomationClient;
 
 namespace WPDAutomatic.Models;
 
-public sealed class ElementNode
-{
+public sealed class ElementNode {
     [JsonPropertyName("name")]
     public string Name { get; init; } = string.Empty;
 
@@ -54,8 +53,7 @@ public sealed class ElementNode
     public IUIAutomationElement? BackingElement { get; init; }
 }
 
-public sealed class BoundingRectangle
-{
+public sealed class BoundingRectangle {
     [JsonPropertyName("x")]
     public double X { get; init; }
 

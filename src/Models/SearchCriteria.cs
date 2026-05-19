@@ -1,7 +1,6 @@
 namespace WPDAutomatic.Models;
 
-public sealed class SearchCriteria
-{
+public sealed class SearchCriteria {
     public string? Name { get; init; }
     public string? AutomationId { get; init; }
     public string? ClassName { get; init; }
@@ -21,8 +20,7 @@ public sealed class SearchCriteria
         IsEnabled is null &&
         ProcessId is null;
 
-    public override string ToString()
-    {
+    public override string ToString() {
         var parts = new List<string>();
         if (Name != null) parts.Add($"Name={Name}");
         if (AutomationId != null) parts.Add($"AutomationId={AutomationId}");
