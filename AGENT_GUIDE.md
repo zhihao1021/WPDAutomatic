@@ -363,25 +363,3 @@ WPDAutomatic.exe
 → {"id":"4","action":"set_value","parameters":{"runtimeId":"42,2758860","value":"Hello from AI!"}}
 ← {"id":"4","success":true,"action":"set_value","data":{"setValue":"Hello from AI!"},"elapsedMs":18}
 ```
-
-## 專案結構
-
-```
-WPDAutomatic/
-└── src/
-    ├── Models/
-    │   ├── ElementNode.cs       # UI 元素節點資料模型
-    │   ├── Command.cs           # 輸入命令模型
-    │   ├── CommandResponse.cs   # 回應模型
-    │   ├── ProcessInfo.cs       # 處理程序資訊
-    │   └── SearchCriteria.cs    # 搜尋條件
-    ├── Abstractions/
-    │   └── IAutomationService.cs # 自動化服務介面
-    ├── Core/
-    │   ├── AutomationService.cs  # UIA 自動化實作
-    │   ├── ConditionFactory.cs   # UIA 條件建構器
-    │   └── NativeMethods.cs      # Win32 P/Invoke
-    ├── Commands/
-    │   └── CommandRouter.cs      # JSON 命令路由器
-    └── Program.cs               # 入口點
-```
